@@ -1,109 +1,48 @@
 <?php
-// -----------------------------
-// DB CONNECTION (adjust creds)
-// -----------------------------
-$DB_HOST = 'localhost';
-$DB_USER = 'root';
-$DB_PASS = '';
-$DB_NAME = 'learned';
+session_start();
 
-$dbc = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-if ($dbc->connect_error) {
-    http_response_code(500);
-    die('Database connection failed.');
-}
-$dbc->set_charset('utf8mb4');
-
-// -----------------------------
-// SEARCH LOGIC (prepared)
-// -----------------------------
-$courses_rs = null;
-
-if (isset($_POST['search'])) {
-    $valueToSearch = trim($_POST['valueToSearch'] ?? '');
-    $like = "%{$valueToSearch}%";
-
-    $stmt = $dbc->prepare("SELECT cname, cdescription FROM courses WHERE cname LIKE ?");
-    $stmt->bind_param('s', $like);
-    $stmt->execute();
-    $courses_rs = $stmt->get_result();
-    $stmt->close();
-} else {
-    $courses_rs = $dbc->query("SELECT cname, cdescription FROM courses");
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.html");
+    exit();
 }
 
-// -----------------------------
-// VERIFIED COURSES (for tiles)
-// -----------------------------
-$verified_rs = $dbc->query("SELECT cname FROM courses WHERE verified='yes' ORDER BY created_at DESC");
+require_once "connection.php"; // include DB connection
+
+$sql = "SELECT * FROM courses";
+$result = $conn->query($sql);
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-	<link rel="shortcut icon" type="png" href="images/icon/favicon.png">
-	<meta charset="utf-8">
-	<meta http-equiv="X-UA-Comaptible" content="IE=edge">
-	<title>Search Courses</title>
-	<meta name="desciption" content="">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="style01.css">
-	<script type="text/javascript" src="script.js"></script>
-	<script src="https://code.jquery.com/jquery-3.2.1.js"></script>
-	<script>
-		$(window).on('scroll', function(){
-  			if($(window).scrollTop()){
-  			  $('nav').addClass('black');
- 			 }else {
- 		   $('nav').removeClass('black');
- 		 }
-		})
-	</script>
-
-	<style type="text/css">
-		#searchbar {
-			border: none;
-			width: 220%;
-			height: 45px;
-			margin-left: -245%;
-			margin-top: 30%;
-			border: 2px solid #DF2771;
-			padding: 2%;
-			padding-left: 10%;
-			border-radius: 25px;
-			font-size: 120%;
-			margin-bottom: 10%;
-			margin-right: -10%;
-		}
-		.srch { height: 40px; width: 50%; border: 2px solid yellow; }
-		#title { text-align: center; margin-top: -5%; margin-left: 40%; margin-bottom: 1.5%; }
-		#content { margin-top: 5%; }
-		table { margin-right: 10%; margin-left: 10%; }
-		#filter_button { height: 50px; width: 50px; margin-top: 30%; margin-left: -25%; border: none; background-color: white; }
-		#search_img { height: 35px; width: 35px; margin-top: -2%; }
-		tr { width: 70%; }
-		th, td { width: 15%; padding: 1.5%; }
-		th { text-align: left; background-image: linear-gradient(to right, #FA4B37, #DF2771); color: #fff; }
-		td { background-color: #dddddd; }
-		td:hover { background-color: #bbbbbb; }
-		.head-container { margin-top: 5%; }
-		#email_head { background-color: yellow; }
-		.title { margin-top: 20%; }
-	</style>
+    <meta charset="UTF-8">
+    <title>Available Courses</title>
+    <link rel="stylesheet" href="style.css"> <!-- use your CSS -->
 </head>
 <body>
+    <h1>Available Courses</h1>
 
-<!-- Navigation Bar -->
-	<header id="header">
-		<nav>
-			<div class="logo"><img src="images/icon/logo.png" alt="logo"></div>
-			<ul>
-				<li><a class="active" href="index.php">Home</a></li>
-				<li><a href="#popular_subjects">Popular subjects</a></li>
-			</ul>
-			<a class="get-started" href="loginNew.html">Get Started</a>
-			<img src="images/icon/menu.png" class="menu" onclick="sideMenu(0)" alt="menu">
-		</nav>
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>Course ID</th>
+            <th>Course Name</th>
+            <th>Description</th>
+        </tr>
+        <?php
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                echo "<tr>
+                        <td>" . htmlspecialchars($row['course_id']) . "</td>
+                        <td>" . htmlspecialchars($row['course_name']) . "</td>
+                        <td>" . htmlspecialchars($row['description']) . "</td>
+                      </tr>";
+            }
+        } else {
+            echo "<tr><td colspan='3'>No courses found</td></tr>";
+        }
+        ?>
+    </table>
 
-		<br><br><br>
-
-		<marquee style="background: hsla(255,70%,10%,0.5); margin-top: 50px;" direction="left" onmouseover="this.stop()" onmouseout="this.start()" scrollamount="20"><div class="marqu">Register or Login in
+    <p><a href="index.php">Back to Dashboard</a></p>
+</body>
+</html>
